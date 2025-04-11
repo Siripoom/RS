@@ -15,13 +15,18 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route exact path="/login" element={<Login />} />
+        {/* success  */}
+        <Route exact path="/login" element={<Login />} /> 
         <Route path="/register" element={<Register />} />
+
+
+        {/* unsuccess */}
         <Route path="/admin/manage-rooms" element={<AdminRoomManagement />} />
         <Route
           path="/admin/manage-payments"
           element={<AdminPaymentManagement />}
         />
+        
         <Route path="/" element={<RoomList />} />
         <Route path="/room/:roomId" element={<RoomDetails />} />
         <Route path="/book/:roomId" element={<BookingForm />} />
