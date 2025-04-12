@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Dropdown from "../components/Dropdown";
+import Navbar from "../components/Navbar";
 
 const RoomList = () => {
   const [rooms, setRooms] = useState([]);
@@ -34,19 +35,12 @@ const RoomList = () => {
 
   return (
     <div className="bg-gray-100 h-screen">
-      <div className="row">
-        <div className="col-12">
-          <div className="d-flex justify-content-between px-5 ps-2 pe-5 py-auto bg-amber-300">
-            <h3 className="font-bold text-center my-3">รายการห้องพัก</h3>
-            <Dropdown label="สถานะ" />
-          </div>
-        </div>
-      </div>
+      <Navbar userName={"Username"} />
 
       <div className="container py-2">
         <div className="row room-list">
           {rooms.map((room) => (
-            <div key={room.id} className="col-12 col-md-3 col-sm-6 col-xs-12  room-card">
+            <Link to={'/room/'+room.id} key={room.id} className="col-12 text-decoration-none col-md-3 col-sm-6 col-xs-12  room-card">
               <div className="card">
                 <div className="card-body">
                   <div className="d-flex justify-content-center">
@@ -70,7 +64,7 @@ const RoomList = () => {
                 </div>
               </div>
 
-            </div>
+            </Link>
           ))}
         </div>
       </div>

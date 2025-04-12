@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useLocation } from "react-router-dom"; // ใช้ useLocation แทน useParams
+import Swal from "sweetalert2"; // ใช้ SweetAlert2 สำหรับการแจ้งเตือน
+import Navbar from "./Navbar";
+import slip from "../assets/133822.jpg"; // เปลี่ยนเป็น path ของสลิปการชำระเงิน
 
-const PaymentForm = ({ bookingId }) => {
+const PaymentForm = () => {
+  const location = useLocation();
+  const bookingId = location.state?.bookingId;
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -68,51 +74,71 @@ const PaymentForm = ({ bookingId }) => {
       return;
     }
 
+
     alert("การชำระเงินของคุณได้รับการบันทึก");
     setLoading(false);
     setPaymentStatus("pending"); // อัปเดตสถานะการชำระเงิน
   };
 
   return (
-    <div>
-      <h1>ฟอร์มการชำระเงิน</h1>
-      <div>
-        <label>ชื่อเต็ม:</label>
-        <input
-          type="text"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-        />
+    <div className="bg-gray-100 h-screen ">
+      <Navbar userName={"Username"} />
+      <div className="card mx-5 my-5">
+        <div className="card-body px-5 py-5 ">
+          <div className="row">
+            <div className="col-12 col-sm-12 col-md-6 d-flex justify-content-center">
+              <img src={slip} width={"50%"} height={"50%"} alt="" />
+            </div>
+            <div className="col-12 col-sm-12 col-md-6">
+            <h1>ชำระเงิน</h1>
+          <div>
+            <label>ชื่อเต็ม:</label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="form-control"
+              placeholder="กรุณากรอกชื่อเต็ม"
+              required
+            />
+          </div>
+
+          <div>
+            <label>เบอร์โทร:</label>
+            <input
+              type="text"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="form-control"
+            />
+          </div>
+
+          <div>
+            <label>อีเมล:</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="form-control"
+            />
+          </div>
+
+          <div>
+            <label>อัปโหลดสลิปการชำระเงิน:</label>
+            <input type="file" onChange={handlePaymentSlipUpload} className="form-control" />
+          </div>
+
+          <button onClick={handlePayment} className="btn btn-success my-4 form-control" disabled={loading}>
+            {loading ? "กำลังอัปโหลด..." : "ชำระเงิน"}
+          </button>
+
+          {paymentStatus && <p>สถานะการชำระเงิน: {paymentStatus}</p>}
+            </div>
+          </div>
+
+        </div>
       </div>
 
-      <div>
-        <label>เบอร์โทร:</label>
-        <input
-          type="text"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label>อีเมล:</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label>อัปโหลดสลิปการชำระเงิน:</label>
-        <input type="file" onChange={handlePaymentSlipUpload} />
-      </div>
-
-      <button onClick={handlePayment} disabled={loading}>
-        {loading ? "กำลังอัปโหลด..." : "ชำระเงิน"}
-      </button>
-
-      {paymentStatus && <p>สถานะการชำระเงิน: {paymentStatus}</p>}
     </div>
   );
 };

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import DatePicker from "react-datepicker";
-import Dropdown from "../components/Dropdown";
-
 import "react-datepicker/dist/react-datepicker.css";
+import Navbar from "./Navbar";
+import Swal from "sweetalert2"; // ใช้ SweetAlert2 สำหรับการแจ้งเตือน
 
 const BookingForm = () => {
   const { roomId } = useParams(); // รับ roomId จาก URL
@@ -53,86 +53,101 @@ const BookingForm = () => {
     };
 
     // บันทึกการจองห้องในฐานข้อมูล (ตาราง bookings)
-    const { error } = await supabase.from("bookings").insert([bookingData]);
+    const { data, error } = await supabase.from("bookings").insert([bookingData]).select("id").single();
     if (error) {
       console.error("Error booking room:", error);
     } else {
-      alert("การจองห้องพักสำเร็จ");
-      navigate("/"); // กลับไปหน้าแรกหลังการจอง
+      Swal.fire({
+        icon: "success",
+        title: "การจองห้องพักสำเร็จ",
+        text: "คุณได้ทำการจองห้องพักเรียบร้อยแล้ว",
+      }).then(() => {
+        navigate("/payment/"+data.id); // เปลี่ยนเส้นทางไปยังหน้าสถานะการจอง
+      });
     }
   };
 
   if (loading) {
-    return <p>กำลังโหลดข้อมูลห้องพัก...</p>;
+    return (
+      <div className="h-screen flex justify-center items-center">
+        <p>กำลังโหลดข้อมูลห้องพัก...</p>
+      </div>);
   }
 
   return (
-    <div className="bg-gray-100 h-screen">
-      <div className="row">
-        <div className="col-12">
-          <div className="d-flex justify-content-between px-5 ps-2 pe-5 py-auto bg-amber-300">
-            <h3 className="font-bold text-center my-3">รายการห้องพัก</h3>
-            <Dropdown label="สถานะ" />
-          </div>
-        </div>
-      </div>
+    <div className="bg-gray-100 h-screen ">
+      <Navbar userName={"Username"} />
       <div className="container mt-3">
         <div className="d-flex justify-content-center">
           <div className="card w-full">
             <div className="card-body">
-              <h1>การจองห้องพัก</h1>
+              <h1 className="px-3">การจองห้องพัก</h1>
               <div className=" row room-details">
-                <div className="col-12 col-sm-12 col-md-6">
+                <div className="col-12 col-sm-12 col-md-6 px-5">
                   <img src={room.image_url} alt={room.room_type} />
                 </div>
-                <div className="col-12 col-sm-12 col-md-6">
+                <div className="col-12 col-sm-12 col-md-6 px-5">
                   <h2>{room.room_type}</h2>
                   <p>ราคา: ฿{room.price}</p>
                   <p>สถานะ: {room.status === "available" ? "ว่าง" : "ไม่ว่าง"}</p>
 
                   {room.status === "available" ? (
                     <>
-                      <div>
+                      <div className="my-3">
                         <label>ชื่อเต็ม:</label>
                         <input
                           type="text"
                           value={fullName}
+                          style={{ borderBottom: "solid 3px ", borderRadius: "5px", paddingLeft: "10px", marginLeft: "10px" }}
+                          placeholder="กรุณากรอกชื่อเต็ม"
                           onChange={(e) => setFullName(e.target.value)}
                         />
                       </div>
 
-                      <div>
+                      <div className="my-3">
                         <label>เบอร์โทร:</label>
                         <input
                           type="text"
                           value={phone}
+                          style={{ borderBottom: "solid 3px ", borderRadius: "5px", paddingLeft: "10px", marginLeft: "10px" }}
+                          placeholder="กรุณากรอกเบอร์โทร"
                           onChange={(e) => setPhone(e.target.value)}
                         />
                       </div>
 
-                      <div>
+                      <div className="my-3">
                         <label>อีเมล:</label>
                         <input
                           type="email"
                           value={email}
+                          placeholder="กรุณากรอกอีเมล"
+                          style={{ borderBottom: "solid 3px ", borderRadius: "5px", paddingLeft: "10px", marginLeft: "10px" }}
                           onChange={(e) => setEmail(e.target.value)}
                         />
                       </div>
 
-                      <div>
+                      <div className="my-3 d-flex">
                         <label>เลือกวันที่เข้าพัก:</label>
-                        <DatePicker
-                          selected={checkInDate}
-                          onChange={(date) => setCheckInDate(date)}
-                        />
+                        <div className=""
+                          style={{ borderBottom: "solid 3px ", borderRadius: "5px", paddingLeft: "10px", marginLeft: "10px" }}>
+                          <DatePicker
+                            selected={checkInDate}
+                            onChange={(date) => setCheckInDate(date)}
+                          />
+                        </div>
+
                       </div>
 
-                      <div>
+                      <div className="my-3 d-flex">
                         <label>เลือกวันที่ออก:</label>
-                        <DatePicker
-                          selected={checkOutDate}
-                          onChange={(date) => setCheckOutDate(date)}
-                        />
+                        <div className=""
+                          style={{ borderBottom: "solid 3px ", borderRadius: "5px", paddingLeft: "10px", marginLeft: "10px" }}>
+                          <DatePicker
+                            selected={checkOutDate}
+                            onChange={(date) => setCheckOutDate(date)}
+                          />
+                        </div>
+
                       </div>
                       <button className="btn btn-success form-control my-2" onClick={handleBooking}>จองห้องพัก</button>
 
