@@ -1,3 +1,4 @@
+// src/pages/AdminRoomManagement.jsx
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import Swal from "sweetalert2";
@@ -8,231 +9,370 @@ const AdminRoomManagement = () => {
   const [price, setPrice] = useState("");
   const [status, setStatus] = useState("available");
   const [roomImage, setRoomImage] = useState(null);
+  const [roomImagePreview, setRoomImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [rooms, setRooms] = useState([]);
+  const [formErrors, setFormErrors] = useState({});
 
-  // ฟังก์ชันอัปโหลดรูปภาพ
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    setRoomImage(file);
-  };
-
-  // ฟังก์ชันเพิ่มห้อง
-  const addRoom = async () => {
-    setLoading(true);
-
-    // อัปโหลดรูปภาพไปยัง Supabase Storage
-    let imageUrl = "";
-    if (roomImage) {
-      const { data, error: uploadError } = await supabase.storage
-        .from("room-images")
-        .upload(`rooms/${roomImage.name}`, roomImage);
-
-      if (uploadError) {
-        console.error("Error uploading image:", uploadError);
-        setLoading(false);
-        return;
-      }
-
-      imageUrl = data?.path;
-    }
-
-    // เพิ่มห้องในตาราง rooms
-    const { data, error } = await supabase.from("rooms").insert([
-      {
-        room_type: roomType,
-        size,
-        price,
-        status,
-        image_url: imageUrl
-          ? `https://cncsyhhlnwlrmlghwjbb.supabase.co/storage/v1/object/public/room-images/${imageUrl}`
-          : "", // URL ของรูปภาพ
-      },
-    ]);
-
-    if (error) {
-      console.error("Error adding room:", error);
-    } else {
-      Swal.fire({
-        icon: "success",
-        title: "สำเร็จ",
-        text: "ห้องพักถูกเพิ่มเรียบร้อย",
-        confirmButtonText: "ตกลง",
-      });
-      fetchRooms(); // รีเฟรชรายการห้อง
-    }
-    setLoading(false);
-  };
-
-  // ฟังก์ชันดึงข้อมูลห้องทั้งหมด
-  const fetchRooms = async () => {
-    const { data, error } = await supabase.from("rooms").select("*");
-    if (error) {
-      console.error("Error fetching rooms:", error);
-    } else {
-      setRooms(data);
-    }
-  };
-
-  // ฟังก์ชันลบห้อง
-  const deleteRoom = async (roomId) => {
-    Swal.fire({
-      title: "ยืนยันการลบห้องพัก",
-      text: "คุณแน่ใจหรือไม่ว่าต้องการลบห้องพักนี้?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "ใช่, ลบเลย!",
-      cancelButtonText: "ยกเลิก",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        const { error } = await supabase.from("rooms").delete().eq("id", roomId);
-        if (error) {
-          console.error("Error deleting room:", error);
-        } else {
-          Swal.fire({
-            icon: "success",
-            title: "สำเร็จ",
-            text: "ห้องพักถูกลบเรียบร้อย",
-            confirmButtonText: "ตกลง",
-          });
-          fetchRooms(); // รีเฟรชรายการห้อง
-        }
-      }
-    });
-
-  };
-
-  // ฟังก์ชันแก้ไขห้อง
-  const editRoom = async (roomId) => {
-    let newPrice = null;
-    Swal.fire({
-      title: "แก้ไขราคาห้องพัก",
-      text: "กรุณากรอกราคาใหม่:",
-      input: "number",
-      showCancelButton: true,
-      confirmButtonText: "บันทึก",
-      cancelButtonText: "ยกเลิก",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-      newPrice = result.value;
-      if (newPrice) {
-        const { error } = await supabase
-          .from("rooms")
-          .update({ price: newPrice })
-          .eq("id", roomId);
-        if (error) {
-          console.error("Error updating room:", error);
-        } else {
-          Swal.fire({
-            icon: "success",
-            title: "สำเร็จ",
-            text: "ห้องพักถูกแก้ไขเรียบร้อย",
-            confirmButtonText: "ตกลง",
-          });
-          fetchRooms(); // รีเฟรชรายการห้อง
-        }
-      }
-      }})
-
-   
-  };
-
+  // Fetch rooms on component mount
   useEffect(() => {
     fetchRooms();
   }, []);
 
+  // Form validation
+  const validateForm = () => {
+    const errors = {};
+
+    if (!roomType.trim()) errors.roomType = "กรุณากรอกประเภทห้อง";
+    if (!size.trim()) errors.size = "กรุณากรอกขนาดห้อง";
+    if (!price.trim()) errors.price = "กรุณากรอกราคา";
+    if (isNaN(Number(price))) errors.price = "ราคาต้องเป็นตัวเลขเท่านั้น";
+    if (!roomImage) errors.roomImage = "กรุณาอัปโหลดรูปห้อง";
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle image upload and preview
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setRoomImage(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setRoomImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Fetch all rooms
+  const fetchRooms = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.from("rooms").select("*");
+
+      if (error) throw error;
+      setRooms(data || []);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+      Swal.fire({
+        icon: "error",
+        title: "ไม่สามารถดึงข้อมูลห้องพักได้",
+        text: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add a new room
+  const addRoom = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+
+    try {
+      // Upload image to Supabase Storage
+      const timestamp = new Date().getTime();
+      const filePath = `rooms/${timestamp}-${roomImage.name}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("room-images")
+        .upload(filePath, roomImage);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("room-images")
+        .getPublicUrl(filePath);
+
+      const imageUrl = urlData?.publicUrl || filePath;
+
+      // Add room to database
+      const { data, error } = await supabase.from("rooms").insert([
+        {
+          room_type: roomType,
+          size,
+          price: Number(price),
+          status,
+          image_url: imageUrl,
+        },
+      ]);
+
+      if (error) throw error;
+
+      Swal.fire({
+        icon: "success",
+        title: "เพิ่มห้องพักสำเร็จ",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+
+      // Reset form
+      setRoomType("");
+      setSize("");
+      setPrice("");
+      setStatus("available");
+      setRoomImage(null);
+      setRoomImagePreview("");
+      setFormErrors({});
+
+      // Refresh room list
+      fetchRooms();
+    } catch (error) {
+      console.error("Error adding room:", error);
+      Swal.fire({
+        icon: "error",
+        title: "ไม่สามารถเพิ่มห้องพักได้",
+        text: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Edit room price
+  const editRoom = async (roomId) => {
+    try {
+      const room = rooms.find((r) => r.id === roomId);
+
+      const { value: newPrice } = await Swal.fire({
+        title: "แก้ไขราคาห้องพัก",
+        input: "number",
+        inputLabel: "กรุณากรอกราคาใหม่",
+        inputValue: room.price,
+        showCancelButton: true,
+        inputValidator: (value) => {
+          if (!value) {
+            return "กรุณากรอกราคา";
+          }
+          if (isNaN(Number(value))) {
+            return "ราคาต้องเป็นตัวเลขเท่านั้น";
+          }
+        },
+      });
+
+      if (newPrice) {
+        const { error } = await supabase
+          .from("rooms")
+          .update({ price: Number(newPrice) })
+          .eq("id", roomId);
+
+        if (error) throw error;
+
+        Swal.fire({
+          icon: "success",
+          title: "แก้ไขราคาห้องพักสำเร็จ",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+
+        fetchRooms();
+      }
+    } catch (error) {
+      console.error("Error updating room:", error);
+      Swal.fire({
+        icon: "error",
+        title: "ไม่สามารถแก้ไขราคาห้องพักได้",
+        text: error.message,
+      });
+    }
+  };
+
+  // Delete room
+  const deleteRoom = async (roomId) => {
+    try {
+      const result = await Swal.fire({
+        title: "ยืนยันการลบห้องพัก",
+        text: "คุณแน่ใจหรือไม่ว่าต้องการลบห้องพักนี้?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "ลบ",
+        cancelButtonText: "ยกเลิก",
+      });
+
+      if (result.isConfirmed) {
+        const { error } = await supabase
+          .from("rooms")
+          .delete()
+          .eq("id", roomId);
+
+        if (error) throw error;
+
+        Swal.fire({
+          icon: "success",
+          title: "ลบห้องพักสำเร็จ",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+
+        fetchRooms();
+      }
+    } catch (error) {
+      console.error("Error deleting room:", error);
+      Swal.fire({
+        icon: "error",
+        title: "ไม่สามารถลบห้องพักได้",
+        text: error.message,
+      });
+    }
+  };
+
   return (
     <div>
-      <h2>เพิ่มห้องพัก</h2>
-      <div className="d-flex">
-        <div className="me-3">
-          <label>ประเภทห้อง:</label>
+      <h2 className="text-xl font-bold mb-4">เพิ่มห้องพัก</h2>
+      <div className="row g-3">
+        <div className="col-md-3">
+          <label className="form-label">ประเภทห้อง</label>
           <input
             type="text"
             value={roomType}
-            className="form-control"
-            placeholder="กรุณากรอกประเภทห้อง"
+            className={`form-control ${
+              formErrors.roomType ? "is-invalid" : ""
+            }`}
+            placeholder="เช่น ห้องเตียงเดี่ยว, ห้องเตียงคู่"
             onChange={(e) => setRoomType(e.target.value)}
           />
+          {formErrors.roomType && (
+            <div className="invalid-feedback">{formErrors.roomType}</div>
+          )}
         </div>
-        <div className="me-3">
-          <label>ขนาดห้อง (ตร.ม.):</label>
+        <div className="col-md-2">
+          <label className="form-label">ขนาดห้อง (ตร.ม.)</label>
           <input
             type="text"
-            className="form-control"
-            placeholder="กรุณากรอกขนาดห้อง"
+            className={`form-control ${formErrors.size ? "is-invalid" : ""}`}
+            placeholder="เช่น 25"
             value={size}
             onChange={(e) => setSize(e.target.value)}
           />
+          {formErrors.size && (
+            <div className="invalid-feedback">{formErrors.size}</div>
+          )}
         </div>
-        <div className="me-3">
-          <label>ราคา:</label>
-
+        <div className="col-md-2">
+          <label className="form-label">ราคา (บาท)</label>
           <input
             type="text"
-            className="form-control"
-            placeholder="กรุณากรอกราคา"
+            className={`form-control ${formErrors.price ? "is-invalid" : ""}`}
+            placeholder="เช่น 1500"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
+          {formErrors.price && (
+            <div className="invalid-feedback">{formErrors.price}</div>
+          )}
         </div>
-        <div className="me-3">
-          <label>สถานะห้อง:</label>
-          <select value={status} className="form-select" onChange={(e) => setStatus(e.target.value)}>
+        <div className="col-md-2">
+          <label className="form-label">สถานะห้อง</label>
+          <select
+            value={status}
+            className="form-select"
+            onChange={(e) => setStatus(e.target.value)}
+          >
             <option value="available">ว่าง</option>
             <option value="unavailable">ไม่ว่าง</option>
           </select>
         </div>
-        <div className="me-3">
-          <label>อัปโหลดรูปห้อง:</label>
-          <input type="file" className="form-control w-60" onChange={handleImageUpload} />
+        <div className="col-md-3">
+          <label className="form-label">อัปโหลดรูปห้อง</label>
+          <input
+            type="file"
+            className={`form-control ${
+              formErrors.roomImage ? "is-invalid" : ""
+            }`}
+            onChange={handleImageUpload}
+            accept="image/*"
+          />
+          {formErrors.roomImage && (
+            <div className="invalid-feedback">{formErrors.roomImage}</div>
+          )}
         </div>
-        <button onClick={addRoom} className="btn btn-success" disabled={loading}>
-          {loading ? "กำลังเพิ่มห้อง..." : "เพิ่ม"}
-        </button>
+        <div className="col-12">
+          {roomImagePreview && (
+            <div className="mt-2 text-center">
+              <img
+                src={roomImagePreview}
+                alt="Room Preview"
+                className="img-thumbnail"
+                style={{ maxHeight: "100px" }}
+              />
+            </div>
+          )}
+        </div>
+        <div className="col-12">
+          <button
+            onClick={addRoom}
+            className="btn btn-success"
+            disabled={loading}
+          >
+            {loading ? "กำลังเพิ่มห้อง..." : "เพิ่มห้องพัก"}
+          </button>
+        </div>
       </div>
-      <hr />
 
+      <hr className="my-4" />
 
-      <h2>รายการห้องพัก</h2>
-      <div>
-        {rooms.length > 0 ? (
-          <div className="room-list row ">
-            {rooms.map((room) => (
-              <div className="col-3">
-                <div className="card mx-4" key={room.id}>
-                  <div className="d-flex justify-content-center items-center">
-                    <img
-                      src={room.image_url || "default-room-image.jpg"}
-                      alt={room.room_type}
-                      className="card-img-top "
-                      style={{
-                        width: "100px",
-                        height: "100px",
-                        objectFit: "cover",
-                      }}
-                    />
+      <h2 className="text-xl font-bold mb-4">รายการห้องพัก</h2>
 
+      {loading && !rooms.length ? (
+        <p className="text-center py-4">กำลังโหลดข้อมูลห้องพัก...</p>
+      ) : rooms.length === 0 ? (
+        <div className="alert alert-info">ยังไม่มีห้องพักในระบบ</div>
+      ) : (
+        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+          {rooms.map((room) => (
+            <div className="col" key={room.id}>
+              <div className="card h-100">
+                <div className="text-center p-3">
+                  <img
+                    src={room.image_url || "/placeholder-room.jpg"}
+                    alt={room.room_type}
+                    className="img-fluid rounded"
+                    style={{
+                      height: "120px",
+                      objectFit: "cover",
+                    }}
+                  />
+                </div>
+                <div className="card-body pt-0">
+                  <h5 className="card-title">{room.room_type}</h5>
+                  <p className="card-text mb-1">ขนาด: {room.size} ตร.ม.</p>
+                  <p className="card-text mb-1">ราคา: ฿{room.price}</p>
+                  <p className="card-text mb-3">
+                    สถานะ:
+                    <span
+                      className={`ms-1 badge ${
+                        room.status === "available" ? "bg-success" : "bg-danger"
+                      }`}
+                    >
+                      {room.status === "available" ? "ว่าง" : "ไม่ว่าง"}
+                    </span>
+                  </p>
+                  <div className="d-flex gap-2">
+                    <button
+                      className="btn btn-warning flex-grow-1"
+                      onClick={() => editRoom(room.id)}
+                    >
+                      แก้ไข
+                    </button>
+                    <button
+                      className="btn btn-danger flex-grow-1"
+                      onClick={() => deleteRoom(room.id)}
+                    >
+                      ลบ
+                    </button>
                   </div>
-                  <hr />
-                  <p className="py-0 ms-2 mb-1">ประเภทห้อง: {room.room_type}</p>
-                  <p className="py-0 ms-2 mb-1">ขนาด: {room.size} ตร.ม.</p>
-                  <p className="py-0 ms-2 mb-1">ราคา: ฿{room.price}</p>
-                  <p className="py-0 ms-2 mb-1">สถานะ: {room.status === "available" ? "ว่าง" : "ไม่ว่าง"}</p>
-                  <div className="d-flex mb-2">
-                    <button className="btn btn-warning form-control mx-2" onClick={() => editRoom(room.id)}>แก้ไข</button>
-                    <button className="btn btn-danger form-control mx-2 " onClick={() => deleteRoom(room.id)}>ลบ</button>
-                  </div>
-
                 </div>
               </div>
-
-            ))}
-          </div>
-        ) : (
-          <p>ยังไม่มีห้องพักในระบบ</p>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

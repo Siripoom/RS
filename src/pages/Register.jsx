@@ -1,67 +1,108 @@
+// src/pages/Register.jsx
 import { useState } from "react";
-import { supabase } from "../supabaseClient";
-import { Link , useNavigate} from "react-router-dom";
+import { supabase, handleSupabaseError } from "../supabaseClient";
+import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
 const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleRegister = async () => {
-    const { user, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+  const handleRegister = async (e) => {
+    e.preventDefault();
 
-    if (error) {
-      console.error("Error:", error); // ตรวจสอบข้อผิดพลาด
-      setError(error.message);
-    } else {
-      console.log("User registered:", user); // ตรวจสอบข้อมูลผู้ใช้
+    if (!email || !password) {
+      setError("กรุณากรอกอีเมลและรหัสผ่าน");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
       Swal.fire({
         title: "สมัครสมาชิกสำเร็จ",
-        text: "กรุณาเข้าสู่ระบบ",
+        text: "กรุณายืนยันอีเมลของคุณ และเข้าสู่ระบบ",
         icon: "success",
       }).then(() => {
         navigate("/login");
       });
+    } catch (error) {
+      setError(handleSupabaseError(error));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="h-screen flex justify-center items-center bg-amber-50">
-      <div className=" rounded-3xl w-xl h-xl mx-60 p-10  bg-gray-100  shadow-lg" >
+      <div className="rounded-3xl w-full max-w-md p-10 bg-gray-100 shadow-lg">
         <h2 className="text-2xl font-bold text-center mb-3">สมัครสมาชิก</h2>
-        <div className="">
-          <label htmlFor="email">อีเมล</label>
-          <input
-            type="email"
-            placeholder="อีเมล"
-            className="form-control w-full my-2"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+        <form onSubmit={handleRegister}>
+          <div className="mb-4">
+            <label htmlFor="email" className="block mb-1">
+              อีเมล
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="อีเมล"
+              className="form-control w-full"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="password" className="block mb-1">
+              รหัสผ่าน
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)"
+              className="form-control w-full"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <div className="mb-4">
+            <button
+              type="submit"
+              className="btn btn-success w-full"
+              disabled={loading}
+            >
+              {loading ? "กำลังสมัคร..." : "สมัครสมาชิก"}
+            </button>
+          </div>
+        </form>
+        <hr className="my-4" />
+        <div className="text-center">
+          <Link className="text-black hover:underline" to="/login">
+            กลับไปหน้าเข้าสู่ระบบ
+          </Link>
         </div>
-        <div className="">
-          <label htmlFor="password">รหัสผ่าน</label>
-          <input
-            type="password"
-            placeholder="รหัสผ่าน"
-            className="form-control w-full my-2"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <div className="">
-          <button onClick={handleRegister} className="btn btn-success w-full my-2">Register</button>
-          {error && <p>{error}</p>}
-        </div>
-        <hr />
-        <Link className="text-black text-center" to="/login">กลับหน้าเข้าสู่ระบบ</Link>
       </div>
-
     </div>
   );
 };

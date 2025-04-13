@@ -1,64 +1,117 @@
+// src/pages/Login.jsx
 import { useState } from "react";
-import { supabase } from "../supabaseClient";
-import { Link , useNavigate} from "react-router-dom";
+import { supabase, handleSupabaseError } from "../supabaseClient";
+import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    const { user, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
-    if (error) {
-      setError(error.message);
-    } else {
-      console.log("Logged in as:", user);
-      Swal.fire({
-        title: "เข้าสู่ระบบสำเร็จ",
-        text: "กรุณาเข้าสู่ระบบ",
-        icon: "success",
-      }).then(() => {
-        navigate("/");
+    if (!email || !password) {
+      setError("กรุณากรอกอีเมลและรหัสผ่าน");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
+
+      if (error) {
+        throw error;
+      }
+
+      // Store auth info in localStorage for persistence
+      localStorage.setItem("auth", JSON.stringify(data));
+
+      // Check if the user is admin and redirect accordingly
+      if (email.toLowerCase() === "admin@gmail.com") {
+        Swal.fire({
+          title: "เข้าสู่ระบบผู้ดูแลสำเร็จ",
+          text: "กำลังนำคุณไปยังหน้าจัดการระบบ",
+          icon: "success",
+          timer: 1500,
+        }).then(() => {
+          navigate("/admin/manage-rooms");
+        });
+      } else {
+        Swal.fire({
+          title: "เข้าสู่ระบบสำเร็จ",
+          text: "ยินดีต้อนรับเข้าสู่ระบบ",
+          icon: "success",
+          timer: 1500,
+        }).then(() => {
+          navigate("/");
+        });
+      }
+    } catch (error) {
+      setError(handleSupabaseError(error));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="h-screen flex justify-center items-center bg-amber-50">
-      <div className=" rounded-3xl w-xl h-xl mx-60 p-10  bg-gray-100  shadow-lg" >
+      <div className="rounded-3xl w-full max-w-md p-10 bg-gray-100 shadow-lg">
         <h2 className="text-2xl font-bold text-center mb-3">เข้าสู่ระบบ</h2>
-        <div className="">
-          <label htmlFor="email">อีเมล</label>
-          <input
-            type="email"
-            placeholder="อีเมล"
-            className="form-control w-full my-2"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+        <form onSubmit={handleLogin}>
+          <div className="mb-4">
+            <label htmlFor="email" className="block mb-1">
+              อีเมล
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="อีเมล"
+              className="form-control w-full"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="password" className="block mb-1">
+              รหัสผ่าน
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="รหัสผ่าน"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="form-control w-full"
+              required
+            />
+          </div>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <div className="mb-4">
+            <button
+              type="submit"
+              className="btn btn-success w-full"
+              disabled={loading}
+            >
+              {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+            </button>
+          </div>
+        </form>
+        <hr className="my-4" />
+        <div className="text-center">
+          <Link className="text-black hover:underline" to="/register">
+            สมัครสมาชิก
+          </Link>
         </div>
-        <div className="">
-          <label htmlFor="password">รหัสผ่าน</label>
-          <input
-            type="password"
-            placeholder="รหัสผ่าน"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="form-control w-full my-2"
-          />
-        </div>
-        <div className="">
-          <button className="btn btn-success w-full my-2" onClick={handleLogin}>Login</button>
-          {error && <p>{error}</p>}
-        </div>
-        <hr />
-        <Link className="text-black text-center" to="/register">สมัครสมาชิก</Link>
-
       </div>
     </div>
   );
