@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 
 const AdminRoomManagement = () => {
   const [roomType, setRoomType] = useState("");
+  const [roomName, setRoomName] = useState(""); // เพิ่ม state สำหรับชื่อห้อง
   const [size, setSize] = useState("");
   const [price, setPrice] = useState("");
   const [status, setStatus] = useState("available");
@@ -24,6 +25,7 @@ const AdminRoomManagement = () => {
     const errors = {};
 
     if (!roomType.trim()) errors.roomType = "กรุณากรอกประเภทห้อง";
+    if (!roomName.trim()) errors.roomName = "กรุณากรอกชื่อห้อง"; // เพิ่มการตรวจสอบชื่อห้อง
     if (!size.trim()) errors.size = "กรุณากรอกขนาดห้อง";
     if (!price.trim()) errors.price = "กรุณากรอกราคา";
     if (isNaN(Number(price))) errors.price = "ราคาต้องเป็นตัวเลขเท่านั้น";
@@ -96,6 +98,7 @@ const AdminRoomManagement = () => {
       const { data, error } = await supabase.from("rooms").insert([
         {
           room_type: roomType,
+          room_name: roomName, // เพิ่มชื่อห้อง
           size,
           price: Number(price),
           status,
@@ -114,6 +117,7 @@ const AdminRoomManagement = () => {
 
       // Reset form
       setRoomType("");
+      setRoomName(""); // รีเซ็ตชื่อห้อง
       setSize("");
       setPrice("");
       setStatus("available");
@@ -140,33 +144,61 @@ const AdminRoomManagement = () => {
     try {
       const room = rooms.find((r) => r.id === roomId);
 
-      const { value: newPrice } = await Swal.fire({
-        title: "แก้ไขราคาห้องพัก",
-        input: "number",
-        inputLabel: "กรุณากรอกราคาใหม่",
-        inputValue: room.price,
+      // สร้างฟอร์มสำหรับแก้ไขด้วย SweetAlert2
+      const { value: formValues } = await Swal.fire({
+        title: "แก้ไขข้อมูลห้องพัก",
+        html: `
+          <div class="mb-3">
+            <label class="form-label">ชื่อห้อง</label>
+            <input id="swal-room-name" class="form-control" value="${
+              room.room_name || ""
+            }">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ราคา</label>
+            <input id="swal-price" class="form-control" type="number" value="${
+              room.price
+            }">
+          </div>
+        `,
+        focusConfirm: false,
         showCancelButton: true,
-        inputValidator: (value) => {
-          if (!value) {
-            return "กรุณากรอกราคา";
+        confirmButtonText: "บันทึก",
+        cancelButtonText: "ยกเลิก",
+        preConfirm: () => {
+          const roomName = document.getElementById("swal-room-name").value;
+          const price = document.getElementById("swal-price").value;
+
+          if (!roomName.trim()) {
+            Swal.showValidationMessage("กรุณากรอกชื่อห้อง");
+            return false;
           }
-          if (isNaN(Number(value))) {
-            return "ราคาต้องเป็นตัวเลขเท่านั้น";
+
+          if (!price || isNaN(Number(price))) {
+            Swal.showValidationMessage("ราคาต้องเป็นตัวเลขเท่านั้น");
+            return false;
           }
+
+          return { roomName, price };
         },
       });
 
-      if (newPrice) {
+      if (formValues) {
+        const { roomName, price } = formValues;
+
         const { error } = await supabase
           .from("rooms")
-          .update({ price: Number(newPrice) })
+          .update({
+            room_name: roomName,
+            price: Number(price),
+          })
           .eq("id", roomId);
 
         if (error) throw error;
 
         Swal.fire({
           icon: "success",
-          title: "แก้ไขราคาห้องพักสำเร็จ",
+          title: "แก้ไขข้อมูลห้องพักสำเร็จ",
           showConfirmButton: false,
           timer: 1500,
         });
@@ -177,7 +209,7 @@ const AdminRoomManagement = () => {
       console.error("Error updating room:", error);
       Swal.fire({
         icon: "error",
-        title: "ไม่สามารถแก้ไขราคาห้องพักได้",
+        title: "ไม่สามารถแก้ไขข้อมูลห้องพักได้",
         text: error.message,
       });
     }
@@ -239,6 +271,21 @@ const AdminRoomManagement = () => {
           />
           {formErrors.roomType && (
             <div className="invalid-feedback">{formErrors.roomType}</div>
+          )}
+        </div>
+        <div className="col-md-3">
+          <label className="form-label">ชื่อห้อง</label>
+          <input
+            type="text"
+            value={roomName}
+            className={`form-control ${
+              formErrors.roomName ? "is-invalid" : ""
+            }`}
+            placeholder="เช่น Deluxe 101, Suite 202"
+            onChange={(e) => setRoomName(e.target.value)}
+          />
+          {formErrors.roomName && (
+            <div className="invalid-feedback">{formErrors.roomName}</div>
           )}
         </div>
         <div className="col-md-2">
@@ -340,7 +387,11 @@ const AdminRoomManagement = () => {
                   />
                 </div>
                 <div className="card-body pt-0">
-                  <h5 className="card-title">{room.room_type}</h5>
+                  <h5 className="card-title">
+                    {" "}
+                    ชื่อห้อง: {room.room_name || "ไม่ระบุ"}
+                  </h5>
+                  <p className="card-text mb-1">{room.room_type}</p>
                   <p className="card-text mb-1">ขนาด: {room.size} ตร.ม.</p>
                   <p className="card-text mb-1">ราคา: ฿{room.price}</p>
                   <p className="card-text mb-3">

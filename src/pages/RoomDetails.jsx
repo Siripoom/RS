@@ -7,7 +7,6 @@ import Navbar from "../components/Navbar";
 import { LeftCircleFilled, LeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
-
 const RoomDetails = () => {
   const { roomId } = useParams(); // รับ roomId จาก URL
   const [room, setRoom] = useState(null);
@@ -36,7 +35,6 @@ const RoomDetails = () => {
     navigate(`/book/${roomId}`);
   };
 
-
   useEffect(() => {
     fetchRoomDetails();
   }, [roomId]);
@@ -52,7 +50,9 @@ const RoomDetails = () => {
         <div className="card-body px-5 py-5">
           <div className="row">
             <div className="d-flex ">
-              <Link to={"/"} className="my-auto me-3 text-2xl text-black"><LeftCircleFilled /></Link>
+              <Link to={"/"} className="my-auto me-3 text-2xl text-black">
+                <LeftCircleFilled />
+              </Link>
               <h1>รายละเอียดห้องพัก</h1>
             </div>
 
@@ -61,9 +61,12 @@ const RoomDetails = () => {
               <img src={room.image_url} alt={room.room_type} />
             </div>
             <div className="col-12 col-sm-12 col-md-6">
-
               <div className="room-details">
                 <h2>{room.room_type}</h2>
+                {/* แสดงชื่อห้อง */}
+                <h3 className="text-xl text-primary">
+                  {room.room_name || "ห้องพัก"}
+                </h3>
                 <p>ขนาด: {room.size} ตร.ม.</p>
                 <p>ราคา: ฿{room.price}</p>
                 <p>สถานะ: {room.status === "available" ? "ว่าง" : "ไม่ว่าง"}</p>
@@ -86,18 +89,26 @@ const RoomDetails = () => {
                       />
                     </div>
 
-                    <button onClick={() => handleBooking(roomId)} className="btn btn-warning form-control my-3">จองห้องพัก</button>
+                    <button
+                      onClick={() => handleBooking(roomId)}
+                      className="btn btn-warning form-control my-3"
+                    >
+                      จองห้องพัก
+                    </button>
                   </>
                 ) : (
-                  <button className="btn btn-outline-warning form-control" disabled="true">ห้องนี้ไม่ว่างในขณะนี้</button>
+                  <button
+                    className="btn btn-outline-warning form-control"
+                    disabled="true"
+                  >
+                    ห้องนี้ไม่ว่างในขณะนี้
+                  </button>
                 )}
               </div>
             </div>
           </div>
-
         </div>
       </div>
-
     </div>
   );
 };

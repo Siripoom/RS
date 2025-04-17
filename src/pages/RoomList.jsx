@@ -40,7 +40,11 @@ const RoomList = () => {
       <div className="container py-2">
         <div className="row room-list">
           {rooms.map((room) => (
-            <Link to={'/room/'+room.id} key={room.id} className="col-12 text-decoration-none col-md-3 col-sm-6 col-xs-12  room-card">
+            <Link
+              to={"/room/" + room.id}
+              key={room.id}
+              className="col-12 text-decoration-none col-md-3 col-sm-6 col-xs-12  room-card"
+            >
               <div className="card">
                 <div className="card-body">
                   <div className="d-flex justify-content-center">
@@ -48,27 +52,42 @@ const RoomList = () => {
                       className=""
                       src={room.image_url || "default-room-image.jpg"}
                       alt={room.room_type}
-                      style={{ width: "100px", height: "100px", objectFit: "cover" }}
+                      style={{
+                        width: "100px",
+                        height: "100px",
+                        objectFit: "cover",
+                      }}
                     />
                   </div>
 
-                  <h2>{room.room_type}</h2>
+                  <h2>
+                    <strong>{room.room_name || "ห้องพัก"}</strong>
+                  </h2>
+                  {/* แสดงชื่อห้อง */}
+                  <p>{room.room_type}</p>
                   <p>ขนาด: {room.size} ตร.ม.</p>
                   <p>ราคาเริ่มต้น: ฿{room.price}</p>
-                  <p>สถานะ: {room.status === "available" ? "ว่าง" : "ไม่ว่าง"}</p>
+                  <p>
+                    สถานะ: {room.status === "available" ? "ว่าง" : "ไม่ว่าง"}
+                  </p>
                   {room.status === "available" ? (
-                    <button className="btn btn-warning" onClick={() => handleBooking(room.id)}>จองห้อง</button>
+                    <button
+                      className="btn btn-warning"
+                      onClick={() => handleBooking(room.id)}
+                    >
+                      จองห้อง
+                    </button>
                   ) : (
-                    <button className="btn btn-outline-warning" disabled="true">ห้องนี้ไม่ว่าง</button>
+                    <button className="btn btn-outline-warning" disabled="true">
+                      ห้องนี้ไม่ว่าง
+                    </button>
                   )}
                 </div>
               </div>
-
             </Link>
           ))}
         </div>
       </div>
-
     </div>
   );
 };

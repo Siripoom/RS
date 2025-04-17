@@ -149,6 +149,8 @@ const BookingStatus = () => {
                       <tr>
                         <th>หมายเลขการจอง</th>
                         <th>ชื่อผู้จอง</th>
+                        <th>ประเภทห้อง</th>
+                        <th>ชื่อห้อง</th>
                         <th>วันที่เข้าพัก</th>
                         <th>วันที่ออก</th>
                         <th>สถานะการชำระเงิน</th>
@@ -160,6 +162,8 @@ const BookingStatus = () => {
                         <tr key={booking.id}>
                           <td>{booking.id}</td>
                           <td>{booking.full_name}</td>
+                          <td>{booking.room_type || "-"}</td>
+                          <td>{booking.room_name || "-"}</td>
                           <td>{formatDate(booking.check_in)}</td>
                           <td>{formatDate(booking.check_out)}</td>
                           <td>{getStatusBadge(booking.paymentStatus)}</td>
@@ -188,29 +192,6 @@ const BookingStatus = () => {
               )}
             </>
           )}
-
-          {/* Keep search function as a backup */}
-          {/* <div className="mt-5 pt-4 border-top">
-            <h2 className="text-lg font-bold mb-3">ค้นหาการจองด้วยหมายเลข</h2>
-            <div className="row">
-              <div className="col-md-6">
-                <div className="input-group">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="กรอกหมายเลขการจอง"
-                    aria-label="Booking ID"
-                  />
-                  <button className="btn btn-outline-secondary" type="button">
-                    ค้นหา
-                  </button>
-                </div>
-                <small className="text-muted">
-                  สำหรับค้นหาการจองที่ไม่แสดงในรายการด้านบน
-                </small>
-              </div>
-            </div>
-          </div> */}
         </div>
       </div>
     </div>
