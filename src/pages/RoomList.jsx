@@ -88,6 +88,15 @@ const RoomList = () => {
           ))}
         </div>
       </div>
+      <footer className="bg-black text-white py-3">
+        <div className="container">
+          <div className="row">
+            <div className="col text-center">
+              <p className="mb-0">© 2025 Hotel Booking System</p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

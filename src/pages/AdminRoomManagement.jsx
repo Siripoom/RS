@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 
 const AdminRoomManagement = () => {
   const [roomType, setRoomType] = useState("");
-  const [roomName, setRoomName] = useState(""); // เพิ่ม state สำหรับชื่อห้อง
+  const [roomName, setRoomName] = useState("");
   const [size, setSize] = useState("");
   const [price, setPrice] = useState("");
   const [status, setStatus] = useState("available");
@@ -25,7 +25,7 @@ const AdminRoomManagement = () => {
     const errors = {};
 
     if (!roomType.trim()) errors.roomType = "กรุณากรอกประเภทห้อง";
-    if (!roomName.trim()) errors.roomName = "กรุณากรอกชื่อห้อง"; // เพิ่มการตรวจสอบชื่อห้อง
+    if (!roomName.trim()) errors.roomName = "กรุณากรอกชื่อห้อง";
     if (!size.trim()) errors.size = "กรุณากรอกขนาดห้อง";
     if (!price.trim()) errors.price = "กรุณากรอกราคา";
     if (isNaN(Number(price))) errors.price = "ราคาต้องเป็นตัวเลขเท่านั้น";
@@ -98,7 +98,7 @@ const AdminRoomManagement = () => {
       const { data, error } = await supabase.from("rooms").insert([
         {
           room_type: roomType,
-          room_name: roomName, // เพิ่มชื่อห้อง
+          room_name: roomName,
           size,
           price: Number(price),
           status,
@@ -117,7 +117,7 @@ const AdminRoomManagement = () => {
 
       // Reset form
       setRoomType("");
-      setRoomName(""); // รีเซ็ตชื่อห้อง
+      setRoomName("");
       setSize("");
       setPrice("");
       setStatus("available");
@@ -139,7 +139,50 @@ const AdminRoomManagement = () => {
     }
   };
 
-  // Edit room price
+  // Toggle room status
+  const toggleRoomStatus = async (roomId, currentStatus) => {
+    try {
+      const newStatus =
+        currentStatus === "available" ? "unavailable" : "available";
+      const statusText = newStatus === "available" ? "ว่าง" : "ไม่ว่าง";
+
+      const result = await Swal.fire({
+        title: "ยืนยันการเปลี่ยนสถานะห้องพัก",
+        text: `คุณต้องการเปลี่ยนสถานะห้องพักเป็น "${statusText}" หรือไม่?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "ยืนยัน",
+        cancelButtonText: "ยกเลิก",
+      });
+
+      if (result.isConfirmed) {
+        const { error } = await supabase
+          .from("rooms")
+          .update({ status: newStatus })
+          .eq("id", roomId);
+
+        if (error) throw error;
+
+        Swal.fire({
+          icon: "success",
+          title: "เปลี่ยนสถานะห้องพักสำเร็จ",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+
+        fetchRooms();
+      }
+    } catch (error) {
+      console.error("Error updating room status:", error);
+      Swal.fire({
+        icon: "error",
+        title: "ไม่สามารถเปลี่ยนสถานะห้องพักได้",
+        text: error.message,
+      });
+    }
+  };
+
+  // Edit room price and name
   const editRoom = async (roomId) => {
     try {
       const room = rooms.find((r) => r.id === roomId);
@@ -388,7 +431,6 @@ const AdminRoomManagement = () => {
                 </div>
                 <div className="card-body pt-0">
                   <h5 className="card-title">
-                    {" "}
                     ชื่อห้อง: {room.room_name || "ไม่ระบุ"}
                   </h5>
                   <p className="card-text mb-1">{room.room_type}</p>
@@ -403,6 +445,18 @@ const AdminRoomManagement = () => {
                     >
                       {room.status === "available" ? "ว่าง" : "ไม่ว่าง"}
                     </span>
+                    <button
+                      className={`ms-2 btn btn-sm ${
+                        room.status === "available"
+                          ? "btn-danger"
+                          : "btn-success"
+                      }`}
+                      onClick={() => toggleRoomStatus(room.id, room.status)}
+                    >
+                      {room.status === "available"
+                        ? "ตั้งเป็นไม่ว่าง"
+                        : "ตั้งเป็นว่าง"}
+                    </button>
                   </p>
                   <div className="d-flex gap-2">
                     <button

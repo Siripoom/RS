@@ -42,7 +42,8 @@ const BookingForm = () => {
       alert("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
-
+    console.log(room.room_name);
+    console.log(room.room_type);
     const bookingData = {
       room_id: room.id,
       room_name: room.room_name, // เพิ่มชื่อห้อง
